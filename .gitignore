@@ -1,0 +1,10 @@
+.gradio
+__pycache__
+.DS_Store
+*.pyc
+.venv
+*.egg-info
+build
+dist
+.pytest_cache
+.vscode
