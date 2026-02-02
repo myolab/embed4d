@@ -127,7 +127,7 @@ The server runs in a background thread and returns the URL where the viewer is a
 
 ### 4. Inside Jupyter Notebook or Colab [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1gXGBUu-QONjA4K3tgm7IwD2DBD2zPBVe?usp=sharing)
 
-Display 3D GLB/GLTF models directly in Jupyter notebook cells using `notebook_viewer`. This function embeds the viewer as an iframe, making it easy to visualize models alongside your code.
+Display 3D GLB/GLTF models directly in Jupyter notebook cells using `notebook_viewer`. This function embeds the viewer as an iframe, making it easy to visualize models alongside your code. See **`examples/demo_notebook.ipynb`** for a runnable notebook.
 
 #### Basic Usage
 
@@ -168,6 +168,10 @@ This is the same HTML that’s used for:
 
 - `get_viewer_html` and `iframe_srcdoc_html`
 - Any exported HTML file produced by the CLI
+
+#### More examples
+
+In **`examples/`** you’ll find: `demo_gradio.py`, `demo_notebook.ipynb`, `demo_webview.py`, `demo_server.py`. See **`examples/README.md`** for how to run them.
 
 #### Running tests
 
