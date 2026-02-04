@@ -550,7 +550,12 @@
     }
 
     function addHelpers() {
-      ground = getChessboardXZ(200, 80, '#0a0a0a', '#050505', 2048);
+      ground = getChessboardXZ(200, 200, '#0a0a0a', '#050505', 2048);
+      // 200 - grid_size (the overall size of the plane)
+      // 200 - divisions (number of checkerboard squares, creating an 200×200 grid)
+      // #0a0a0a - white color
+      // #050505 - black color
+      // 2048 - texture size
       ground.position.y = -0.01;
       ground.name = 'ground';
       ground.receiveShadow = true;
