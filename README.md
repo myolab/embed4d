@@ -1,5 +1,6 @@
 ## embed4d
 <!-- [![codecov](https://codecov.io/gh/myolab/embed4d/branch/main/graph/badge.svg)](https://codecov.io/gh/myolab/embed4d) -->
+[![PyPI](https://img.shields.io/pypi/v/embed4d)](https://pypi.org/project/embed4d/)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](
 https://colab.research.google.com/drive/1gXGBUu-QONjA4K3tgm7IwD2DBD2zPBVe?usp=sharing)
 ![PyPI - License](https://img.shields.io/pypi/l/myosuite)
