@@ -17,33 +17,42 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - name: Extract Version from TOML
-        uses: SebRollen/toml-action@v1.2.0
-        id: read_toml
-        with:
-          file: 'pyproject.toml'
-          field: 'project.version'
-      - name: Print TOML Version
+      - name: Read version from embed4d/__init__.py
+        id: read_version
         run: |
-          echo TOML Version: ${{ steps.read_toml.outputs.value }}
+          python - << 'PY'
+          import os
+          import pathlib
+          import re
+
+          init_path = pathlib.Path("embed4d/__init__.py")
+          text = init_path.read_text(encoding="utf-8")
+          match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", text)
+          if not match:
+              raise SystemExit("Could not find __version__ in embed4d/__init__.py")
+          version = match.group(1)
+          print(f"Package version: {version}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              print(f"version={version}", file=fh)
+          PY
 
       - uses: mukunku/tag-exists-action@v1.4.0
         id: checkTag
         with:
-          tag: v${{ steps.read_toml.outputs.value }}
+          tag: v${{ steps.read_version.outputs.version }}
 
       - name: If Tag does not exists, Create Git Tag
         if: steps.checkTag.outputs.exists == 'false'
         run: |
-          git tag v${{ steps.read_toml.outputs.value }}
-          git push origin v${{ steps.read_toml.outputs.value }}
+          git tag v${{ steps.read_version.outputs.version }}
+          git push origin v${{ steps.read_version.outputs.version }}
 
       - name: Create GitHub Release
         if: steps.checkTag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.read_toml.outputs.value }}
-          name: v${{ steps.read_toml.outputs.value }}
+          tag_name: v${{ steps.read_version.outputs.version }}
+          name: v${{ steps.read_version.outputs.version }}
           generate_release_notes: true
 
   pypi-publish:
