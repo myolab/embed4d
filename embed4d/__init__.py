@@ -22,4 +22,4 @@ __all__ = [
     "open_viewer_webview",
 ]
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
