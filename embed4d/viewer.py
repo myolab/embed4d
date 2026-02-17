@@ -1,4 +1,3 @@
-import base64
 import os
 
 from embed4d.utilities import file_to_base64
@@ -19,8 +18,8 @@ def get_template_html() -> str:
 def get_viewer_html(glb_base64: str, model_format: str = "glb") -> str:
     """Return the HTML viewer page with the base64 and format placeholders replaced."""
     html_template = get_template_html()
-    html = html_template.replace("{{GLB_BASE64}}", glb_base64 or "")
-    return html.replace(
+    content = html_template.replace("{{GLB_BASE64}}", glb_base64 or "")
+    return content.replace(
         "{{MODEL_FORMAT}}", model_format.lower() if model_format else "glb"
     )
 
@@ -189,35 +188,33 @@ def notebook_viewer(file_path=None, height=600):
     Display a 3D GLB/GLTF model viewer in a Jupyter notebook.
 
     Args:
-        file_path: Optional path to a GLB/GLTF file to load. If None, shows upload interface.
+        file_path: Optional path to a GLB/GLTF file to load. If None, shows upload interface (full viewer only).
         height: Height of the viewer in pixels (default: 600)
 
     Returns:
-        IPython.display.IFrame: IFrame object that displays the viewer in a notebook cell
+        IPython.display.HTML: HTML object that displays the viewer in a notebook cell
 
     Example:
         >>> from embed4d import notebook_viewer
         >>> notebook_viewer("model.glb")
         >>> notebook_viewer("model.glb", height=800)
+        >>> notebook_viewer()
     """
     try:
-        from IPython.display import IFrame
+        from IPython.display import HTML, display
     except ImportError as exc:
         raise ImportError(
             "IPython is required for Jupyter notebook display. "
             "Install it with: pip install embed4d[ipython]"
         ) from exc
 
-    # Get base64 encoded file content and generate HTML
     glb_base64 = file_to_base64(file_path) if file_path else ""
     model_format = _model_format_from_path(file_path) if file_path else "glb"
+
     html_content = get_viewer_html(glb_base64, model_format=model_format)
-
-    # Prepare HTML for notebook display
     notebook_html = _prepare_html_for_notebook(html_content, height)
-
-    # Convert HTML to data URI and use IFrame
-    html_base64 = base64.b64encode(notebook_html.encode("utf-8")).decode("utf-8")
-    data_uri = f"data:text/html;base64,{html_base64}"
-
-    return IFrame(src=data_uri, width="100%", height=height)
+    wrapper = (
+        f'<div style="width:100%;height:{height}px;min-height:{height}px;overflow:hidden;">'
+        f"{notebook_html}</div>"
+    )
+    return display(HTML(wrapper))

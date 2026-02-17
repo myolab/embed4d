@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: system-ui, sans-serif; background: linear-gradient(135deg, #1a1a2e, #0a0a0a, #1a1a2e); color: white; overflow: hidden; }
@@ -341,15 +342,35 @@
       orbitControls.maxDistance = 100;
       orbitControls.target.set(0, 1, 0);
 
-      // --- Optimized lighting for white/gray skeleton ---
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      // --- HDR environment (model-viewer style PBR lighting) ---
+      const rgbeLoader = new THREE.RGBELoader();
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+      rgbeLoader.load(
+        'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_09_1k.hdr',
+        function (texture) {
+          texture.mapping = THREE.EquirectangularReflectionMapping;
+          const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+          scene.environment = envMap;
+          texture.dispose();
+          pmremGenerator.dispose();
+          renderer.toneMappingExposure = 1.5;
+        },
+        undefined,
+        function () {
+          pmremGenerator.dispose();
+        }
+      );
+
+      // --- Key + fill lights (HDR does most; these add shadows and punch) ---
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
       scene.add(ambientLight);
 
-      const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x222222, 1.5);
+      const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
       hemisphereLight.position.set(0, 2, 0);
       scene.add(hemisphereLight);
 
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
       directionalLight.position.set(3, 5, 4);
       directionalLight.castShadow = true;
       directionalLight.shadow.mapSize.width = 2048;
@@ -366,14 +387,6 @@
       const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
       fillLight.position.set(-3, 3, -2);
       scene.add(fillLight);
-
-      const rimLight = new THREE.DirectionalLight(0xffffff, 0.7);
-      rimLight.position.set(0, 4, -5);
-      scene.add(rimLight);
-
-      const topLight = new THREE.DirectionalLight(0xffffff, 0.6);
-      topLight.position.set(0, 8, 0);
-      scene.add(topLight);
 
       const bgCanvas = document.createElement('canvas');
       bgCanvas.width = 1;

@@ -594,21 +594,19 @@ def test_model3d_viewer_includes_base64_in_html(tmp_path):
 
 
 def test_notebook_viewer_with_file_returns_html_object(tmp_path):
-    """Test notebook_viewer returns IPython.display.IFrame object with file."""
+    """Test notebook_viewer with file uses full embed4d template."""
     glb_file = tmp_path / "test.glb"
     test_data = b"GLB_CONTENT"
     glb_file.write_bytes(test_data)
 
-    mock_iframe = MagicMock()
-    mock_iframe_class = MagicMock(return_value=mock_iframe)
-
-    # Create mock IPython modules
+    mock_html = MagicMock()
+    mock_display_return = MagicMock()
     mock_display = MagicMock()
-    mock_display.IFrame = mock_iframe_class
+    mock_display.HTML = MagicMock(return_value=mock_html)
+    mock_display.display = MagicMock(return_value=mock_display_return)
     mock_ipython = MagicMock()
     mock_ipython.display = mock_display
 
-    # Add to sys.modules before patching
     with patch.dict(
         sys.modules, {"IPython": mock_ipython, "IPython.display": mock_display}
     ):
@@ -616,29 +614,22 @@ def test_notebook_viewer_with_file_returns_html_object(tmp_path):
 
         result = notebook_viewer(str(glb_file))
 
-        assert result is mock_iframe
-        mock_iframe_class.assert_called_once()
-        # Verify IFrame was called with correct arguments
-        call_kwargs = mock_iframe_class.call_args[1]
-        assert "src" in call_kwargs
-        assert call_kwargs["width"] == "100%"
-        assert call_kwargs["height"] == 600
-        # Verify the data URI contains the base64 data
-        data_uri = call_kwargs["src"]
-        assert data_uri.startswith("data:text/html;base64,")
-        decoded_html = base64.b64decode(data_uri.split(",", 1)[1]).decode("utf-8")
+        assert result is mock_display_return
+        mock_display.HTML.assert_called_once()
+        html = mock_display.HTML.call_args[0][0]
+        assert "three.js" in html or "canvas" in html.lower()
+        assert "600px" in html
         encoded = base64.b64encode(test_data).decode("utf-8")
-        assert encoded in decoded_html
+        assert encoded in html
 
 
 def test_notebook_viewer_without_file_returns_html_object():
-    """Test notebook_viewer returns IPython.display.IFrame object without file."""
-    mock_iframe = MagicMock()
-    mock_iframe_class = MagicMock(return_value=mock_iframe)
-
-    # Create mock IPython modules
+    """Test notebook_viewer calls display(HTML(...)) without file."""
+    mock_html = MagicMock()
+    mock_display_return = MagicMock()
     mock_display = MagicMock()
-    mock_display.IFrame = mock_iframe_class
+    mock_display.HTML = MagicMock(return_value=mock_html)
+    mock_display.display = MagicMock(return_value=mock_display_return)
     mock_ipython = MagicMock()
     mock_ipython.display = mock_display
 
@@ -649,21 +640,13 @@ def test_notebook_viewer_without_file_returns_html_object():
 
         result = notebook_viewer()
 
-        assert result is mock_iframe
-        mock_iframe_class.assert_called_once()
-        # Verify IFrame was called with correct arguments
-        call_kwargs = mock_iframe_class.call_args[1]
-        assert "src" in call_kwargs
-        assert call_kwargs["width"] == "100%"
-        assert call_kwargs["height"] == 600
-        # Verify the data URI contains valid HTML
-        data_uri = call_kwargs["src"]
-        assert data_uri.startswith("data:text/html;base64,")
-        decoded_html = base64.b64decode(data_uri.split(",", 1)[1]).decode("utf-8")
-        assert isinstance(decoded_html, str)
-        assert len(decoded_html) > 0
-        # Should not contain placeholder
-        assert "{{GLB_BASE64}}" not in decoded_html
+        assert result is mock_display_return
+        mock_display.HTML.assert_called_once()
+        html = mock_display.HTML.call_args[0][0]
+        assert "600px" in html
+        assert "{{GLB_BASE64}}" not in html
+        # No file → full template (upload UI)
+        assert "three.js" in html or "canvas" in html.lower()
 
 
 def test_notebook_viewer_with_custom_height(tmp_path):
@@ -671,12 +654,10 @@ def test_notebook_viewer_with_custom_height(tmp_path):
     glb_file = tmp_path / "test.glb"
     glb_file.write_bytes(b"test")
 
-    mock_iframe = MagicMock()
-    mock_iframe_class = MagicMock(return_value=mock_iframe)
-
-    # Create mock IPython modules
+    mock_display_return = MagicMock()
     mock_display = MagicMock()
-    mock_display.IFrame = mock_iframe_class
+    mock_display.HTML = MagicMock()
+    mock_display.display = MagicMock(return_value=mock_display_return)
     mock_ipython = MagicMock()
     mock_ipython.display = mock_display
 
@@ -687,11 +668,10 @@ def test_notebook_viewer_with_custom_height(tmp_path):
 
         result = notebook_viewer(str(glb_file), height=800)
 
-        assert result is mock_iframe
-        # Verify height parameter is passed to IFrame
-        mock_iframe_class.assert_called_once()
-        call_kwargs = mock_iframe_class.call_args[1]
-        assert call_kwargs["height"] == 800
+        assert result is mock_display_return
+        html = mock_display.HTML.call_args[0][0]
+        assert "three.js" in html or "canvas" in html.lower()
+        assert "800px" in html
 
 
 def test_notebook_viewer_raises_import_error_without_ipython():
@@ -745,12 +725,9 @@ def test_notebook_viewer_includes_base64_data(tmp_path):
     test_data = b"GLB_BINARY_DATA_123"
     glb_file.write_bytes(test_data)
 
-    mock_iframe = MagicMock()
-    mock_iframe_class = MagicMock(return_value=mock_iframe)
-
-    # Create mock IPython modules
     mock_display = MagicMock()
-    mock_display.IFrame = mock_iframe_class
+    mock_display.HTML = MagicMock()
+    mock_display.display = MagicMock()
     mock_ipython = MagicMock()
     mock_ipython.display = mock_display
 
@@ -761,26 +738,19 @@ def test_notebook_viewer_includes_base64_data(tmp_path):
 
         notebook_viewer(str(glb_file))
 
-        # Get the data URI that was passed to IFrame()
-        call_kwargs = mock_iframe_class.call_args[1]
-        data_uri = call_kwargs["src"]
-        assert data_uri.startswith("data:text/html;base64,")
-        # Decode the base64 HTML content
-        html_content = base64.b64decode(data_uri.split(",", 1)[1]).decode("utf-8")
+        iframe_html = mock_display.HTML.call_args[0][0]
         encoded = base64.b64encode(test_data).decode("utf-8")
-        assert encoded in html_content
+        assert encoded in iframe_html
 
 
 def test_notebook_viewer_with_nonexistent_file(tmp_path):
     """Test notebook_viewer handles nonexistent file gracefully."""
     nonexistent_file = tmp_path / "nonexistent.glb"
 
-    mock_iframe = MagicMock()
-    mock_iframe_class = MagicMock(return_value=mock_iframe)
-
-    # Create mock IPython modules
+    mock_display_return = MagicMock()
     mock_display = MagicMock()
-    mock_display.IFrame = mock_iframe_class
+    mock_display.HTML = MagicMock()
+    mock_display.display = MagicMock(return_value=mock_display_return)
     mock_ipython = MagicMock()
     mock_ipython.display = mock_display
 
@@ -792,29 +762,22 @@ def test_notebook_viewer_with_nonexistent_file(tmp_path):
         # Should not raise error, just return empty viewer
         result = notebook_viewer(str(nonexistent_file))
 
-        assert result is mock_iframe
-        mock_iframe_class.assert_called_once()
-        # Verify IFrame was called with data URI
-        call_kwargs = mock_iframe_class.call_args[1]
-        data_uri = call_kwargs["src"]
-        assert data_uri.startswith("data:text/html;base64,")
-        # HTML should be generated (empty base64)
-        decoded_html = base64.b64decode(data_uri.split(",", 1)[1]).decode("utf-8")
-        assert isinstance(decoded_html, str)
-        assert "{{GLB_BASE64}}" not in decoded_html
+        assert result is mock_display_return
+        mock_display.HTML.assert_called_once()
+        html = mock_display.HTML.call_args[0][0]
+        assert isinstance(html, str)
+        assert "{{GLB_BASE64}}" not in html
+        assert "three.js" in html or "canvas" in html.lower()
 
 
 def test_notebook_viewer_html_structure(tmp_path):
-    """Test that notebook_viewer generates valid HTML structure."""
+    """Test that notebook_viewer with file generates full embed4d template HTML."""
     glb_file = tmp_path / "test.glb"
     glb_file.write_bytes(b"test")
 
-    mock_iframe = MagicMock()
-    mock_iframe_class = MagicMock(return_value=mock_iframe)
-
-    # Create mock IPython modules
     mock_display = MagicMock()
-    mock_display.IFrame = mock_iframe_class
+    mock_display.HTML = MagicMock()
+    mock_display.display = MagicMock()
     mock_ipython = MagicMock()
     mock_ipython.display = mock_display
 
@@ -825,12 +788,7 @@ def test_notebook_viewer_html_structure(tmp_path):
 
         notebook_viewer(str(glb_file))
 
-        # Get the data URI and decode the HTML content
-        call_kwargs = mock_iframe_class.call_args[1]
-        data_uri = call_kwargs["src"]
-        assert data_uri.startswith("data:text/html;base64,")
-        html_content = base64.b64decode(data_uri.split(",", 1)[1]).decode("utf-8")
-        # Should contain HTML structure
-        assert "<" in html_content and ">" in html_content
-        # Should be a complete HTML document
-        assert "html" in html_content.lower() or "script" in html_content.lower()
+        html = mock_display.HTML.call_args[0][0]
+        assert "<" in html and ">" in html
+        assert "three.js" in html or "canvas" in html.lower()
+        assert "canvas-container" in html or "viewer" in html.lower()

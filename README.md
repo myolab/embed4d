@@ -128,20 +128,17 @@ The server runs in a background thread and returns the URL where the viewer is a
 
 ### 4. Inside Jupyter Notebook or Colab [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1gXGBUu-QONjA4K3tgm7IwD2DBD2zPBVe?usp=sharing)
 
-Display 3D GLB/GLTF models directly in Jupyter notebook cells using `notebook_viewer`. This function embeds the viewer as an iframe, making it easy to visualize models alongside your code. See **`examples/demo_notebook.ipynb`** for a runnable notebook.
+Display 3D GLB/GLTF models directly in Jupyter notebook cells using `notebook_viewer`. Uses the full embed4d template (Three.js, upload UI, FBX, animation controls) and works in Jupyter and Colab. See **`examples/demo_notebook.ipynb`** for a runnable notebook.
 
 #### Basic Usage
 
 ```python
 from embed4d import notebook_viewer
 
-# Display a model from a file path
 notebook_viewer("path/to/model.glb")
-
-# Display with custom height
 notebook_viewer("model.glb", height=800)
 
-# Display empty viewer (for drag-and-drop)
+# Empty viewer with upload/drag-and-drop
 notebook_viewer()
 ```
 
